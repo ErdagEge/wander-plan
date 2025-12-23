@@ -1,0 +1,5 @@
+{
+  "name": "WanderPlan AI",
+  "description": "A family-focused travel planning app that generates personalized, day-by-day itineraries using AI. Input your preferences and get a structured plan instantly.",
+  "requestFramePermissions": []
+}
