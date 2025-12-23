@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Itinerary, DayPlan, Activity } from '../types';
-import { Clock, MapPin, DollarSign, Sunrise, Sun, Moon, Sparkles, Send, ArrowLeft, Loader2 } from 'lucide-react';
+import { Clock, MapPin, DollarSign, Sunrise, Sun, Moon, Sparkles, Send, ArrowLeft, Loader2, Download, Printer } from 'lucide-react';
 
 interface ItineraryDisplayProps {
   itinerary: Itinerary;
@@ -10,7 +10,7 @@ interface ItineraryDisplayProps {
 }
 
 const ActivityCard: React.FC<{ activity: Activity }> = ({ activity }) => (
-  <div className="bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow mb-3 last:mb-0">
+  <div className="bg-white p-4 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow mb-3 last:mb-0 break-inside-avoid">
     <div className="flex justify-between items-start mb-2">
       <h4 className="font-bold text-slate-800">{activity.title}</h4>
       <span className="text-xs font-semibold bg-slate-100 text-slate-600 px-2 py-1 rounded-full">{activity.estimatedCost}</span>
@@ -38,9 +38,9 @@ const ActivityCard: React.FC<{ activity: Activity }> = ({ activity }) => (
 
 const DaySection: React.FC<{ day: DayPlan }> = ({ day }) => {
   return (
-    <div className="mb-12 relative pl-8 border-l-2 border-slate-200 last:border-0 last:mb-0">
+    <div className="mb-12 relative pl-8 border-l-2 border-slate-200 last:border-0 last:mb-0 break-inside-avoid">
       {/* Day Marker */}
-      <div className="absolute -left-[17px] top-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-md ring-4 ring-slate-50 z-10">
+      <div className="absolute -left-[17px] top-0 w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-md ring-4 ring-slate-50 z-10 print:ring-0">
         {day.dayNumber}
       </div>
       
@@ -99,24 +99,76 @@ const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({ itinerary, onRefine
     }
   };
 
+  const handleExport = () => {
+    let content = `${itinerary.title}\n${itinerary.summary}\n\n`;
+
+    itinerary.days.forEach(day => {
+        content += `Day ${day.dayNumber}: ${day.theme} (${day.date})\n`;
+        content += `----------------------------------------\n`;
+        
+        const formatActivities = (label: string, activities: Activity[]) => {
+            if (activities.length === 0) return;
+            content += `\n${label}:\n`;
+            activities.forEach(act => {
+                content += `- ${act.title} (${act.duration}, ${act.estimatedCost})\n`;
+                content += `  ${act.description}\n`;
+                content += `  Location: ${act.location}\n`;
+            });
+        };
+
+        formatActivities('Morning', day.morning);
+        formatActivities('Afternoon', day.afternoon);
+        formatActivities('Evening', day.evening);
+        content += `\n\n`;
+    });
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${itinerary.title.replace(/\s+/g, '_')}_Itinerary.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto h-[calc(100vh-6rem)]">
+    <div className="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto h-[calc(100vh-6rem)] print:h-auto print:block">
       
       {/* Sidebar / Controls */}
-      <div className="lg:w-1/3 flex flex-col gap-6">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full lg:sticky lg:top-6">
+      <div className="lg:w-1/3 flex flex-col gap-6 print:w-full print:mb-8">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full lg:sticky lg:top-6 print:shadow-none print:border-none print:p-0 print:h-auto">
           <div className="mb-6">
             <button 
                 onClick={onReset}
-                className="flex items-center text-sm text-slate-500 hover:text-blue-600 mb-4 transition-colors"
+                className="flex items-center text-sm text-slate-500 hover:text-blue-600 mb-4 transition-colors print:hidden"
             >
                 <ArrowLeft className="w-4 h-4 mr-1" /> Start New Plan
             </button>
             <h1 className="text-3xl font-bold text-slate-900 leading-tight mb-2">{itinerary.title}</h1>
+            
+            <div className="flex gap-2 mb-4 print:hidden">
+                <button
+                    onClick={handleExport}
+                    className="flex items-center px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-medium hover:bg-slate-50 hover:text-blue-600 transition-colors"
+                    title="Download as Text"
+                >
+                    <Download className="w-3.5 h-3.5 mr-1.5" /> Export Text
+                </button>
+                <button
+                    onClick={() => window.print()}
+                    className="flex items-center px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-medium hover:bg-slate-50 hover:text-blue-600 transition-colors"
+                    title="Print or Save as PDF"
+                >
+                    <Printer className="w-3.5 h-3.5 mr-1.5" /> Print / PDF
+                </button>
+            </div>
+
             <p className="text-slate-600 text-sm leading-relaxed">{itinerary.summary}</p>
           </div>
 
-          <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-auto">
+          <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-auto print:hidden">
              <div className="flex items-center gap-2 mb-2 text-blue-800 font-bold text-sm">
                 <Sparkles className="w-4 h-4" /> AI Trip Assistant
              </div>
@@ -148,7 +200,7 @@ const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({ itinerary, onRefine
           </div>
           
            {isRefining && (
-                <div className="mt-4 p-3 bg-yellow-50 text-yellow-800 text-sm rounded-lg flex items-center animate-pulse">
+                <div className="mt-4 p-3 bg-yellow-50 text-yellow-800 text-sm rounded-lg flex items-center animate-pulse print:hidden">
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Updating itinerary based on your feedback...
                 </div>
@@ -157,11 +209,11 @@ const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({ itinerary, onRefine
       </div>
 
       {/* Main Itinerary Scrollable */}
-      <div className="lg:w-2/3 bg-white rounded-2xl shadow-sm border border-slate-100 p-8 overflow-y-auto custom-scrollbar">
+      <div className="lg:w-2/3 bg-white rounded-2xl shadow-sm border border-slate-100 p-8 overflow-y-auto custom-scrollbar print:w-full print:shadow-none print:border-none print:p-0 print:overflow-visible">
          {itinerary.days.map((day) => (
              <DaySection key={day.dayNumber} day={day} />
          ))}
-         <div className="mt-8 text-center p-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+         <div className="mt-8 text-center p-8 bg-slate-50 rounded-xl border border-dashed border-slate-200 print:hidden">
             <p className="text-slate-500 font-medium">End of Itinerary</p>
             <p className="text-xs text-slate-400 mt-1">Safe travels!</p>
          </div>

@@ -1,9 +1,6 @@
 import { GoogleGenAI, Type, Chat } from "@google/genai";
 import { UserPreferences, Itinerary } from "../types";
 
-// Initialize the API client
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 // Define the schema for structured JSON output
 const activitySchema = {
   type: Type.OBJECT,
@@ -44,6 +41,9 @@ const itinerarySchema = {
 let chatSession: Chat | null = null;
 
 export const startNewTripSession = async (prefs: UserPreferences): Promise<Itinerary> => {
+  // Initialize the API client inside the function to avoid top-level process access
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
   chatSession = ai.chats.create({
     model: "gemini-3-flash-preview", // Good balance of speed and reasoning for complex JSON
     config: {
